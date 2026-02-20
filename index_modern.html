@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Smart Grocery Manager 🛒</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,
+<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22>
+<text y=%22.9em%22 font-size=%2290%22>🛒</text>
+</svg>"
+    />
+
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+        margin: 0;
+        padding: 40px;
+      }
+
+      .app {
+        max-width: 1000px;
+        margin: auto;
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+      }
+
+      .card {
+        background: #fafafa;
+        padding: 15px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      }
+
+      .item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+      }
+
+      .item {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr 1fr 1fr 150px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+      }
+
+      .item-header {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr 1fr 1fr 150px;
+        font-weight: 600;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #ddd;
+        margin-bottom: 6px;
+      }
+
+      /* ===== Responsive Mobile ===== */
+      @media (max-width: 768px) {
+        .item-header {
+          display: none;
+        }
+
+        .item {
+          display: none;
+        }
+
+        .item-tel span {
+          font-weight: 600;
+          color: #666;
+        }
+
+        .item-tel {
+          grid-template-columns: 1fr;
+          gap: 6px;
+          background: #f9fafb;
+          padding: 12px;
+          border-radius: 12px;
+          margin-bottom: 10px;
+          border: 1px solid #eee;
+        }
+
+        .item-tel span {
+          font-weight: 600;
+          color: #666;
+        }
+
+        .item-tel > div {
+          display: flex;
+          justify-content: space-between;
+        }
+
+        .item-tel > div:last-child {
+          justify-content: flex-end;
+        }
+      }
+
+      @media (min-width: 768px) {
+        .item-tel {
+          display: none;
+        }
+      }
+
+      .item:last-child {
+        border: none;
+      }
+
+      button {
+        border: none;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-left: 5px;
+      }
+      button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .primary {
+        background: #6366f1;
+        color: white;
+      }
+      .danger {
+        background: #ef4444;
+        color: white;
+      }
+      .success {
+        background: #10b981;
+        color: white;
+      }
+
+      input,
+      select {
+        width: 100%;
+        margin-bottom: 8px;
+        padding: 6px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+      }
+
+      .urgent {
+        color: #ef4444;
+        font-weight: 600;
+      }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+
+  <body>
+    <div class="app">
+      <h1>🛒 Smart Grocery Manager</h1>
+
+      <div class="card">
+        <input id="nom" placeholder="Nom" />
+        <select id="categorie">
+          <option>Viande</option>
+          <option>Légume</option>
+          <option>Laitage</option>
+          <option>Boisson</option>
+        </select>
+        <input id="quantite" type="number" placeholder="Qté actuelle" />
+        <input id="quantite_voulue" type="number" placeholder="Qté voulue" />
+        <input id="prix" type="number" placeholder="Prix unitaire" />
+        <button class="primary" onclick="addItem()">➕ Ajouter</button>
+      </div>
+
+      <h2>📦 Inventaire</h2>
+      <div id="categories" class="grid"></div>
+
+      <h2>🚨 Priorités</h2>
+      <div id="urgent"></div>
+
+      <h2>📊 Dépenses par catégorie</h2>
+      <canvas id="depensesChart"></canvas>
+    </div>
+
+    <script>
+      const categoryIcons = {
+        Viande: "🥩",
+        Légume: "🥦",
+        Laitage: "🧀",
+        Boisson: "🥤",
+      };
+      class StorageAPI {
+        static get() {
+          return JSON.parse(localStorage.getItem("groceryDB")) || [];
+        }
+        static save(data) {
+          localStorage.setItem("groceryDB", JSON.stringify(data));
+        }
+      }
+
+      let db = StorageAPI.get();
+
+      function formatDate(date) {
+        if (!date) return "-";
+        return new Date(date).toLocaleDateString();
+      }
+
+      function computeUrgency(item) {
+        let manque = item.quantite_voulue - item.quantite;
+        let jours = 0;
+
+        if (item.date_dernier) {
+          jours =
+            (Date.now() - new Date(item.date_dernier)) / (1000 * 60 * 60 * 24);
+        }
+
+        return manque * 15 + jours * 2;
+      }
+
+      let chartInstance = null;
+
+      function renderChart() {
+        const ctx = document.getElementById("depensesChart");
+
+        const categories = [...new Set(db.map((i) => i.categorie))];
+
+        const data = categories.map((cat) => {
+          return db
+            .filter((i) => i.categorie === cat)
+            .reduce((sum, item) => sum + item.quantite * item.prix, 0);
+        });
+
+        if (chartInstance) {
+          chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: categories,
+            datasets: [
+              {
+                label: "Dépenses (€)",
+                data: data,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+            },
+          },
+        });
+      }
+
+      function render() {
+        StorageAPI.save(db);
+
+        const container = document.getElementById("categories");
+        container.innerHTML = "";
+
+        const categories = [...new Set(db.map((i) => i.categorie))];
+
+        categories.forEach((cat) => {
+          const bloc = document.createElement("div");
+          bloc.className = "card";
+          const icon = categoryIcons[cat] || "📦";
+          bloc.innerHTML = `<h3>${icon} ${cat}</h3>`;
+          let total = 0;
+
+          db.filter((i) => i.categorie === cat).forEach((item) => {
+            total += item.quantite * item.prix;
+            bloc.innerHTML += `
+<div class="item-header">
+   <div>Produit</div>
+   <div>Stock</div>
+   <div>Prix</div>
+   <div>Dernier achat</div>
+   <div>Actions</div>
+</div>
+`;
+            bloc.innerHTML += `
+<div class="item">
+    <div><strong>${item.nom}</strong></div>
+    <div>${item.quantite}/${item.quantite_voulue}</div>
+    <div>${item.prix}€</div>
+    <div>${formatDate(item.date_dernier)}</div>
+    <div>
+        <button class="success" onclick="acheter(${item.id})">🛍</button>
+        <!--  <button class="primary" onclick="consommer(${item.id})">➖</button> -->
+        <button class="primary" onclick="consommer(${item.id})" ${item.quantite === 0 ? "disabled" : ""} > ➖ </button>
+        <button class="danger" onclick="deleteItem(${item.id})">🗑</button>
+    </div>
+</div>
+`;
+
+            bloc.innerHTML += `
+<div class="item-tel">
+  <div><span>Produit</span><strong>${item.nom}</strong></div>
+  <div><span>Stock</span>${item.quantite}/${item.quantite_voulue}</div>
+  <div><span>Prix</span>${item.prix}€</div>
+  <div><span>Dernier</span>${formatDate(item.date_dernier)}</div>
+  <div>
+    <button class="success" onclick="acheter(${item.id})">🛍</button>
+    <button class="primary" onclick="consommer(${item.id})" ${item.quantite === 0 ? "disabled" : ""} > ➖ </button>
+    <button class="danger" onclick="deleteItem(${item.id})">🗑</button>
+  </div>
+</div>`;
+          });
+
+          bloc.innerHTML += `<b>Total catégorie: ${total.toFixed(2)}€</b>`;
+          container.appendChild(bloc);
+        });
+
+        renderUrgency();
+        renderChart();
+      }
+
+      function renderUrgency() {
+        const urg = [...db].sort(
+          (a, b) => computeUrgency(b) - computeUrgency(a),
+        );
+        const div = document.getElementById("urgent");
+        div.innerHTML = "";
+        let total = 0;
+
+        urg.forEach((item) => {
+          const manque = item.quantite_voulue - item.quantite;
+          if (manque > 0) {
+            const cout = manque * item.prix;
+            total += cout;
+            div.innerHTML += `<div class="urgent">⚠ ${item.nom} → ${manque.toFixed(2)} → ${cout.toFixed(2)}€</div>`;
+          }
+        });
+
+        div.innerHTML += `<h3>Total manquant: ${total.toFixed(2)}€</h3>`;
+      }
+
+      function addItem() {
+        if (!nom.value || !prix.value) return;
+
+        const now = new Date().toISOString();
+
+        db.push({
+          id: Date.now(),
+          nom: nom.value,
+          categorie: categorie.value,
+          quantite: +quantite.value || 0,
+          quantite_voulue: +quantite_voulue.value || 0,
+          prix: +prix.value,
+          date_premier: now,
+          date_dernier: now,
+        });
+
+        nom.value = "";
+        quantite.value = "";
+        quantite_voulue.value = "";
+        prix.value = "";
+
+        render();
+      }
+
+      function deleteItem(id) {
+        db = db.filter((i) => i.id !== id);
+        render();
+      }
+
+      function acheter(id) {
+        const item = db.find((i) => i.id === id);
+        const now = new Date().toISOString();
+
+        item.quantite += 1;
+
+        if (!item.date_premier) {
+          item.date_premier = now;
+        }
+
+        item.date_dernier = now;
+
+        render();
+      }
+
+      function consommer(id) {
+        const item = db.find((i) => i.id === id);
+
+        if (!item) return;
+
+        if (item.quantite > 0) {
+          item.quantite -= 1;
+        }
+
+        render();
+      }
+
+      render();
+    </script>
+  </body>
+</html>
