@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>🛒 Gestion Courses</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 20px;
+}
+
+h1 {
+    text-align: center;
+}
+
+.categorie {
+    background: white;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px;
+    border-bottom: 1px solid #eee;
+}
+
+.item:last-child {
+    border-bottom: none;
+}
+
+button {
+    border: none;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.add { background: #4CAF50; color: white; }
+.delete { background: #e74c3c; color: white; }
+.urgent { color: red; font-weight: bold; }
+
+input, select {
+    padding: 5px;
+    margin: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🛒 Gestion intelligente des courses</h1>
+
+<div>
+    <input id="nom" placeholder="Nom">
+    <select id="categorie">
+        <option>Viande</option>
+        <option>Légume</option>
+        <option>Laitage</option>
+        <option>Boisson</option>
+        <option>Autre</option>
+    </select>
+    <input id="quantite" type="number" placeholder="Qté actuelle">
+    <input id="quantite_voulue" type="number" placeholder="Qté voulue">
+    <input id="prix" type="number" placeholder="Prix unitaire">
+    <button class="add" onclick="ajouter()">➕ Ajouter</button>
+</div>
+
+<hr>
+
+<div id="liste"></div>
+
+<h2>🚨 Urgences</h2>
+<div id="urgence"></div>
+
+<script>
+
+let aliments = [
+{
+    id: 1,
+    nom: "Poulet",
+    categorie: "Viande",
+    achete: false,
+    quantite: 1,
+    quantite_voulue: 3,
+    date_dernier_achat: "2026-02-10",
+    date_premier_achat: "2026-01-10",
+    prix_unitaire: 8
+},
+{
+    id: 1,
+    nom: "Poulet",
+    categorie: "Le",
+    achete: false,
+    quantite: 1,
+    quantite_voulue: 3,
+    date_dernier_achat: "2026-02-10",
+    date_premier_achat: "2026-01-10",
+    prix_unitaire: 8
+}
+];
+
+function calculUrgence(item) {
+    let manque = item.quantite_voulue - item.quantite;
+    let jours = (new Date() - new Date(item.date_dernier_achat)) / (1000*60*60*24);
+    return manque * 10 + jours;
+}
+
+function afficher() {
+
+    let conteneur = document.getElementById("liste");
+    conteneur.innerHTML = "";
+
+    let categories = [...new Set(aliments.map(a => a.categorie))];
+
+    categories.forEach(cat => {
+
+        let bloc = document.createElement("div");
+        bloc.className = "categorie";
+
+        let totalCat = 0;
+
+        bloc.innerHTML += `<h3>📦 ${cat}</h3>`;
+
+        aliments.filter(a => a.categorie === cat)
+        .forEach(item => {
+
+            let manque = item.quantite_voulue - item.quantite;
+            let cout = manque * item.prix_unitaire;
+            totalCat += item.prix_unitaire * item.quantite;
+
+            bloc.innerHTML += `
+            <div class="item">
+                <span>
+                <input type="checkbox" ${item.achete ? "checked" : ""}
+                onchange="toggle(${item.id})">
+                ${item.nom} (${item.quantite}/${item.quantite_voulue})
+                💰 ${item.prix_unitaire}€
+                Manque: ${manque}
+                </span>
+                <button class="delete" onclick="supprimer(${item.id})">🗑</button>
+            </div>`;
+        });
+
+        bloc.innerHTML += `<p><b>Total catégorie :</b> ${totalCat.toFixed(2)} €</p>`;
+        conteneur.appendChild(bloc);
+    });
+
+    afficherUrgence();
+}
+
+function afficherUrgence() {
+
+    let urgenceDiv = document.getElementById("urgence");
+
+    let tri = [...aliments].sort((a,b)=> calculUrgence(b)-calculUrgence(a));
+
+    urgenceDiv.innerHTML = "";
+
+    let totalManquant = 0;
+
+    tri.forEach(item=>{
+        let manque = item.quantite_voulue - item.quantite;
+        if(manque > 0){
+            let cout = manque * item.prix_unitaire;
+            totalManquant += cout;
+            urgenceDiv.innerHTML += `
+            <div class="urgent">
+            ⚠ ${item.nom} → Manque ${manque} | ${cout}€
+            </div>`;
+        }
+    });
+
+    urgenceDiv.innerHTML += `<h3>Total manquant : ${totalManquant.toFixed(2)} €</h3>`;
+}
+
+function ajouter(){
+
+    let nouvel = {
+        id: Date.now(),
+        nom: document.getElementById("nom").value,
+        categorie: document.getElementById("categorie").value,
+        achete: false,
+        quantite: parseInt(document.getElementById("quantite").value),
+        quantite_voulue: parseInt(document.getElementById("quantite_voulue").value),
+        date_dernier_achat: new Date().toISOString(),
+        date_premier_achat: new Date().toISOString(),
+        prix_unitaire: parseFloat(document.getElementById("prix").value)
+    };
+
+    aliments.push(nouvel);
+    afficher();
+}
+
+function supprimer(id){
+    aliments = aliments.filter(a=>a.id!==id);
+    afficher();
+}
+
+function toggle(id){
+    let item = aliments.find(a=>a.id===id);
+    item.achete = !item.achete;
+}
+
+afficher();
+
+</script>
+
+</body>
+</html>

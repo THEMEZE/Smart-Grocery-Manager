@@ -1,215 +1,411 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>🛒 Gestion Courses</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Smart Grocery Manager 🛒</title>
 
-<style>
-body {
-    font-family: Arial, sans-serif;
-    background: #f4f6f9;
-    margin: 20px;
-}
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
 
-h1 {
-    text-align: center;
-}
+    <link
+      rel="icon"
+      href="data:image/svg+xml,
+<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22>
+<text y=%22.9em%22 font-size=%2290%22>🛒</text>
+</svg>"
+    />
 
-.categorie {
-    background: white;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 12px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-}
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+        margin: 0;
+        padding: 40px;
+      }
 
-.item {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px;
-    border-bottom: 1px solid #eee;
-}
+      .app {
+        max-width: 1000px;
+        margin: auto;
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      }
 
-.item:last-child {
-    border-bottom: none;
-}
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+      }
 
-button {
-    border: none;
-    padding: 5px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-}
+      .card {
+        background: #fafafa;
+        padding: 15px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      }
 
-.add { background: #4CAF50; color: white; }
-.delete { background: #e74c3c; color: white; }
-.urgent { color: red; font-weight: bold; }
+      .item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+      }
 
-input, select {
-    padding: 5px;
-    margin: 5px;
-}
-</style>
-</head>
+      .item {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr 1fr 1fr 150px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+      }
 
-<body>
+      .item-header {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr 1fr 1fr 150px;
+        font-weight: 600;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #ddd;
+        margin-bottom: 6px;
+      }
 
-<h1>🛒 Gestion intelligente des courses</h1>
+      /* ===== Responsive Mobile ===== */
+      @media (max-width: 768px) {
+        .item-header {
+          display: none;
+        }
 
-<div>
-    <input id="nom" placeholder="Nom">
-    <select id="categorie">
-        <option>Viande</option>
-        <option>Légume</option>
-        <option>Laitage</option>
-        <option>Boisson</option>
-        <option>Autre</option>
-    </select>
-    <input id="quantite" type="number" placeholder="Qté actuelle">
-    <input id="quantite_voulue" type="number" placeholder="Qté voulue">
-    <input id="prix" type="number" placeholder="Prix unitaire">
-    <button class="add" onclick="ajouter()">➕ Ajouter</button>
-</div>
+        .item {
+          display: none;
+        }
 
-<hr>
+        .item-tel span {
+          font-weight: 600;
+          color: #666;
+        }
 
-<div id="liste"></div>
+        .item-tel {
+          grid-template-columns: 1fr;
+          gap: 6px;
+          background: #f9fafb;
+          padding: 12px;
+          border-radius: 12px;
+          margin-bottom: 10px;
+          border: 1px solid #eee;
+        }
 
-<h2>🚨 Urgences</h2>
-<div id="urgence"></div>
+        .item-tel span {
+          font-weight: 600;
+          color: #666;
+        }
 
-<script>
+        .item-tel > div {
+          display: flex;
+          justify-content: space-between;
+        }
 
-let aliments = [
-{
-    id: 1,
-    nom: "Poulet",
-    categorie: "Viande",
-    achete: false,
-    quantite: 1,
-    quantite_voulue: 3,
-    date_dernier_achat: "2026-02-10",
-    date_premier_achat: "2026-01-10",
-    prix_unitaire: 8
-},
-{
-    id: 1,
-    nom: "Poulet",
-    categorie: "Le",
-    achete: false,
-    quantite: 1,
-    quantite_voulue: 3,
-    date_dernier_achat: "2026-02-10",
-    date_premier_achat: "2026-01-10",
-    prix_unitaire: 8
-}
-];
+        .item-tel > div:last-child {
+          justify-content: flex-end;
+        }
+      }
 
-function calculUrgence(item) {
-    let manque = item.quantite_voulue - item.quantite;
-    let jours = (new Date() - new Date(item.date_dernier_achat)) / (1000*60*60*24);
-    return manque * 10 + jours;
-}
+      @media (min-width: 768px) {
+        .item-tel {
+          display: none;
+        }
+      }
 
-function afficher() {
+      .item:last-child {
+        border: none;
+      }
 
-    let conteneur = document.getElementById("liste");
-    conteneur.innerHTML = "";
+      button {
+        border: none;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-left: 5px;
+      }
+      button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
 
-    let categories = [...new Set(aliments.map(a => a.categorie))];
+      .primary {
+        background: #6366f1;
+        color: white;
+      }
+      .danger {
+        background: #ef4444;
+        color: white;
+      }
+      .success {
+        background: #10b981;
+        color: white;
+      }
 
-    categories.forEach(cat => {
+      input,
+      select {
+        width: 100%;
+        margin-bottom: 8px;
+        padding: 6px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+      }
 
-        let bloc = document.createElement("div");
-        bloc.className = "categorie";
+      .urgent {
+        color: #ef4444;
+        font-weight: 600;
+      }
+    </style>
 
-        let totalCat = 0;
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
 
-        bloc.innerHTML += `<h3>📦 ${cat}</h3>`;
+  <body>
+    <div class="app">
+      <h1>🛒 Smart Grocery Manager</h1>
 
-        aliments.filter(a => a.categorie === cat)
-        .forEach(item => {
+      <div class="card">
+        <input id="nom" placeholder="Nom" />
+        <select id="categorie">
+          <option>Viande</option>
+          <option>Légume</option>
+          <option>Laitage</option>
+          <option>Boisson</option>
+        </select>
+        <input id="quantite" type="number" placeholder="Qté actuelle" />
+        <input id="quantite_voulue" type="number" placeholder="Qté voulue" />
+        <input id="prix" type="number" placeholder="Prix unitaire" />
+        <button class="primary" onclick="addItem()">➕ Ajouter</button>
+      </div>
 
-            let manque = item.quantite_voulue - item.quantite;
-            let cout = manque * item.prix_unitaire;
-            totalCat += item.prix_unitaire * item.quantite;
+      <h2>📦 Inventaire</h2>
+      <div id="categories" class="grid"></div>
 
-            bloc.innerHTML += `
-            <div class="item">
-                <span>
-                <input type="checkbox" ${item.achete ? "checked" : ""}
-                onchange="toggle(${item.id})">
-                ${item.nom} (${item.quantite}/${item.quantite_voulue})
-                💰 ${item.prix_unitaire}€
-                Manque: ${manque}
-                </span>
-                <button class="delete" onclick="supprimer(${item.id})">🗑</button>
-            </div>`;
+      <h2>🚨 Priorités</h2>
+      <div id="urgent"></div>
+
+      <h2>📊 Dépenses par catégorie</h2>
+      <canvas id="depensesChart"></canvas>
+    </div>
+
+    <script>
+      const categoryIcons = {
+        Viande: "🥩",
+        Légume: "🥦",
+        Laitage: "🧀",
+        Boisson: "🥤",
+      };
+      class StorageAPI {
+        static get() {
+          return JSON.parse(localStorage.getItem("groceryDB")) || [];
+        }
+        static save(data) {
+          localStorage.setItem("groceryDB", JSON.stringify(data));
+        }
+      }
+
+      let db = StorageAPI.get();
+
+      function formatDate(date) {
+        if (!date) return "-";
+        return new Date(date).toLocaleDateString();
+      }
+
+      function computeUrgency(item) {
+        let manque = item.quantite_voulue - item.quantite;
+        let jours = 0;
+
+        if (item.date_dernier) {
+          jours =
+            (Date.now() - new Date(item.date_dernier)) / (1000 * 60 * 60 * 24);
+        }
+
+        return manque * 15 + jours * 2;
+      }
+
+      let chartInstance = null;
+
+      function renderChart() {
+        const ctx = document.getElementById("depensesChart");
+
+        const categories = [...new Set(db.map((i) => i.categorie))];
+
+        const data = categories.map((cat) => {
+          return db
+            .filter((i) => i.categorie === cat)
+            .reduce((sum, item) => sum + item.quantite * item.prix, 0);
         });
 
-        bloc.innerHTML += `<p><b>Total catégorie :</b> ${totalCat.toFixed(2)} €</p>`;
-        conteneur.appendChild(bloc);
-    });
-
-    afficherUrgence();
-}
-
-function afficherUrgence() {
-
-    let urgenceDiv = document.getElementById("urgence");
-
-    let tri = [...aliments].sort((a,b)=> calculUrgence(b)-calculUrgence(a));
-
-    urgenceDiv.innerHTML = "";
-
-    let totalManquant = 0;
-
-    tri.forEach(item=>{
-        let manque = item.quantite_voulue - item.quantite;
-        if(manque > 0){
-            let cout = manque * item.prix_unitaire;
-            totalManquant += cout;
-            urgenceDiv.innerHTML += `
-            <div class="urgent">
-            ⚠ ${item.nom} → Manque ${manque} | ${cout}€
-            </div>`;
+        if (chartInstance) {
+          chartInstance.destroy();
         }
-    });
 
-    urgenceDiv.innerHTML += `<h3>Total manquant : ${totalManquant.toFixed(2)} €</h3>`;
-}
+        chartInstance = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: categories,
+            datasets: [
+              {
+                label: "Dépenses (€)",
+                data: data,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+            },
+          },
+        });
+      }
 
-function ajouter(){
+      function render() {
+        StorageAPI.save(db);
 
-    let nouvel = {
-        id: Date.now(),
-        nom: document.getElementById("nom").value,
-        categorie: document.getElementById("categorie").value,
-        achete: false,
-        quantite: parseInt(document.getElementById("quantite").value),
-        quantite_voulue: parseInt(document.getElementById("quantite_voulue").value),
-        date_dernier_achat: new Date().toISOString(),
-        date_premier_achat: new Date().toISOString(),
-        prix_unitaire: parseFloat(document.getElementById("prix").value)
-    };
+        const container = document.getElementById("categories");
+        container.innerHTML = "";
 
-    aliments.push(nouvel);
-    afficher();
-}
+        const categories = [...new Set(db.map((i) => i.categorie))];
 
-function supprimer(id){
-    aliments = aliments.filter(a=>a.id!==id);
-    afficher();
-}
+        categories.forEach((cat) => {
+          const bloc = document.createElement("div");
+          bloc.className = "card";
+          const icon = categoryIcons[cat] || "📦";
+          bloc.innerHTML = `<h3>${icon} ${cat}</h3>`;
+          let total = 0;
 
-function toggle(id){
-    let item = aliments.find(a=>a.id===id);
-    item.achete = !item.achete;
-}
+          db.filter((i) => i.categorie === cat).forEach((item) => {
+            total += item.quantite * item.prix;
+            bloc.innerHTML += `
+<div class="item-header">
+   <div>Produit</div>
+   <div>Stock</div>
+   <div>Prix</div>
+   <div>Dernier achat</div>
+   <div>Actions</div>
+</div>
+`;
+            bloc.innerHTML += `
+<div class="item">
+    <div><strong>${item.nom}</strong></div>
+    <div>${item.quantite}/${item.quantite_voulue}</div>
+    <div>${item.prix}€</div>
+    <div>${formatDate(item.date_dernier)}</div>
+    <div>
+        <button class="success" onclick="acheter(${item.id})">🛍</button>
+        <!--  <button class="primary" onclick="consommer(${item.id})">➖</button> -->
+        <button class="primary" onclick="consommer(${item.id})" ${item.quantite === 0 ? "disabled" : ""} > ➖ </button>
+        <button class="danger" onclick="deleteItem(${item.id})">🗑</button>
+    </div>
+</div>
+`;
 
-afficher();
+            bloc.innerHTML += `
+<div class="item-tel">
+  <div><span>Produit</span><strong>${item.nom}</strong></div>
+  <div><span>Stock</span>${item.quantite}/${item.quantite_voulue}</div>
+  <div><span>Prix</span>${item.prix}€</div>
+  <div><span>Dernier</span>${formatDate(item.date_dernier)}</div>
+  <div>
+    <button class="success" onclick="acheter(${item.id})">🛍</button>
+    <button class="primary" onclick="consommer(${item.id})" ${item.quantite === 0 ? "disabled" : ""} > ➖ </button>
+    <button class="danger" onclick="deleteItem(${item.id})">🗑</button>
+  </div>
+</div>`;
+          });
 
-</script>
+          bloc.innerHTML += `<b>Total catégorie: ${total.toFixed(2)}€</b>`;
+          container.appendChild(bloc);
+        });
 
-</body>
+        renderUrgency();
+        renderChart();
+      }
+
+      function renderUrgency() {
+        const urg = [...db].sort(
+          (a, b) => computeUrgency(b) - computeUrgency(a),
+        );
+        const div = document.getElementById("urgent");
+        div.innerHTML = "";
+        let total = 0;
+
+        urg.forEach((item) => {
+          const manque = item.quantite_voulue - item.quantite;
+          if (manque > 0) {
+            const cout = manque * item.prix;
+            total += cout;
+            div.innerHTML += `<div class="urgent">⚠ ${item.nom} → ${manque.toFixed(2)} → ${cout.toFixed(2)}€</div>`;
+          }
+        });
+
+        div.innerHTML += `<h3>Total manquant: ${total.toFixed(2)}€</h3>`;
+      }
+
+      function addItem() {
+        if (!nom.value || !prix.value) return;
+
+        const now = new Date().toISOString();
+
+        db.push({
+          id: Date.now(),
+          nom: nom.value,
+          categorie: categorie.value,
+          quantite: +quantite.value || 0,
+          quantite_voulue: +quantite_voulue.value || 0,
+          prix: +prix.value,
+          date_premier: now,
+          date_dernier: now,
+        });
+
+        nom.value = "";
+        quantite.value = "";
+        quantite_voulue.value = "";
+        prix.value = "";
+
+        render();
+      }
+
+      function deleteItem(id) {
+        db = db.filter((i) => i.id !== id);
+        render();
+      }
+
+      function acheter(id) {
+        const item = db.find((i) => i.id === id);
+        const now = new Date().toISOString();
+
+        item.quantite += 1;
+
+        if (!item.date_premier) {
+          item.date_premier = now;
+        }
+
+        item.date_dernier = now;
+
+        render();
+      }
+
+      function consommer(id) {
+        const item = db.find((i) => i.id === id);
+
+        if (!item) return;
+
+        if (item.quantite > 0) {
+          item.quantite -= 1;
+        }
+
+        render();
+      }
+
+      render();
+    </script>
+  </body>
 </html>
